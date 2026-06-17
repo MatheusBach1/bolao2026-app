@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bolão Copa 2026
 
-## Getting Started
+Site de bolão para a Copa do Mundo 2026. Built with Next.js 14, TypeScript, Tailwind CSS, and Supabase.
 
-First, run the development server:
+## Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### 1. Supabase
+
+Create a project at [supabase.com](https://supabase.com) and run the SQL in `supabase/schema.sql` via the SQL Editor.
+
+### 2. Environment Variables
+
+Copy `.env.local` and fill in your real values:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+API_FOOTBALL_KEY=...       # from api-football.com (RapidAPI)
+CRON_SECRET=...            # any random secret string
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Run locally
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3000](http://localhost:3000).
 
-## Learn More
+## Pages
 
-To learn more about Next.js, take a look at the following resources:
+| Route | Description |
+|-------|-------------|
+| `/` | Select your name and submit guesses for the next 24h |
+| `/painel` | All guesses per match with result badges |
+| `/placar` | Rankings by total points |
+| `/admin` | Register matches and insert results |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scoring Rules
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Exact score → **2 points**
+- Correct winner only → **1 point**
+- Draw: only exact score counts (0 for guessing draw without exact score)
 
-## Deploy on Vercel
+## Cron Job (Vercel)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`/api/sync-results` runs daily at 11:00 UTC via `vercel.json`. It fetches finished matches (status `FT`) from API-Football and recalculates points idempotently.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+To manually trigger:
+```bash
+curl -H "Authorization: Bearer YOUR_CRON_SECRET" https://your-domain/api/sync-results
+```
+
+## Participants
+
+Fixed list (no auth): Matheus, Laressa, Igor, Beatriz, Guilherme, Gabriel
