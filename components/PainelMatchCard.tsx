@@ -38,15 +38,34 @@ export default function PainelMatchCard({ match, guesses }: Props) {
 
   const guessCount = guesses.length
 
+  const now = Date.now()
+  const matchStart = new Date(match.match_time).getTime()
+  const matchEnd = matchStart + 105 * 60 * 1000 // 105 min (90 + ~15 acréscimos)
+  const isLive = !hasResult && now >= matchStart && now < matchEnd
+  const isUpcoming24h = !hasResult && !isLive && now < matchStart && matchStart <= now + 24 * 60 * 60 * 1000
+
+  const borderClass = isLive
+    ? 'ring-2 ring-red-500'
+    : isUpcoming24h
+    ? 'ring-2 ring-nlw-yellow'
+    : ''
+
   return (
-    <div className="bg-nlw-card rounded-xl overflow-hidden">
+    <div className={`bg-nlw-card rounded-xl overflow-hidden ${borderClass}`}>
       {/* Header — sempre visível, clicável */}
       <button
         onClick={() => setOpen((o) => !o)}
         className="w-full bg-nlw-input px-5 py-3 flex items-center justify-between text-left hover:bg-[#1a1a1e] transition-colors"
       >
         <div className="flex-1 min-w-0">
-          <span className="text-xs text-nlw-yellow uppercase tracking-wide font-semibold">{match.group_name}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-nlw-yellow uppercase tracking-wide font-semibold">{match.group_name}</span>
+            {isLive && (
+              <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">
+                Ao Vivo
+              </span>
+            )}
+          </div>
           <p className="font-bold mt-0.5 text-white truncate">
             {getFlag(home)} {home} × {getFlag(away)} {away}
           </p>
