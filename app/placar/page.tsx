@@ -31,53 +31,40 @@ async function getRanking() {
 export default async function PlacarPage() {
   const ranking = await getRanking()
 
-  const medals = ['🥇', '🥈', '🥉']
-
   return (
     <div>
-      <h1 className="text-2xl font-bold text-brand-dark mb-2">🏆 Placar</h1>
-      <p className="text-gray-500 mb-6 text-sm">Ranking por pontuação total</p>
+      <h1 className="text-2xl font-bold text-white mb-2">🏆 Placar</h1>
+      <p className="text-nlw-textHover mb-6 text-sm">Ranking por pontuação total</p>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-brand-dark text-white text-sm">
-              <th className="py-3 px-4 text-left">#</th>
-              <th className="py-3 px-4 text-left">Participante</th>
-              <th className="py-3 px-4 text-center">Pts</th>
-              <th className="py-3 px-4 text-center hidden sm:table-cell">⭐ Exatos</th>
-              <th className="py-3 px-4 text-center hidden sm:table-cell">✓ Vencedor</th>
-              <th className="py-3 px-4 text-center hidden sm:table-cell">✗ Erros</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {ranking.map((r, i) => (
-              <tr
-                key={r.name}
-                className={`${i === 0 ? 'bg-yellow-50' : ''} hover:bg-gray-50 transition-colors`}
-              >
-                <td className="py-3 px-4 text-sm font-bold text-gray-400">
-                  {medals[i] ?? i + 1}
-                </td>
-                <td className="py-3 px-4 font-semibold text-brand-dark">{r.name}</td>
-                <td className="py-3 px-4 text-center">
-                  <span className="inline-block bg-brand-green text-white text-sm font-bold px-3 py-0.5 rounded-full min-w-[2.5rem] text-center">
-                    {r.total}
-                  </span>
-                </td>
-                <td className="py-3 px-4 text-center text-sm text-yellow-600 font-semibold hidden sm:table-cell">{r.exact}</td>
-                <td className="py-3 px-4 text-center text-sm text-blue-600 hidden sm:table-cell">{r.winner}</td>
-                <td className="py-3 px-4 text-center text-sm text-gray-400 hidden sm:table-cell">{r.zero}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="space-y-4">
+        {ranking.map((r, i) => (
+          <div
+            key={r.name}
+            className={`bg-nlw-card rounded-xl p-4 py-5 flex items-center gap-4 border-none relative overflow-hidden ${
+              i === 0 ? 'border-b-4 border-b-nlw-yellow' : ''
+            }`}
+          >
+            <div className="w-12 h-12 rounded-full bg-[#121214] flex items-center justify-center text-white font-bold text-xl uppercase shrink-0">
+              {r.name.substring(0, 2)}
+            </div>
+            
+            <div className="flex-1">
+              <p className="text-white font-bold lg:text-lg">{r.name}</p>
+              <p className="text-nlw-textMuted text-sm font-medium">{r.total} ponto(s)</p>
+            </div>
+
+            <div className={`px-4 py-1.5 rounded-full font-bold text-sm flex-shrink-0 ${
+              i < 3 ? 'bg-nlw-yellow text-nlw-bg' : 'bg-[#121214] text-nlw-textMuted'
+            }`}>
+              {i + 1}º
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="mt-4 flex gap-4 text-xs text-gray-400">
-        <span>⭐ Placar exato = 2pts</span>
-        <span>✓ Acertou vencedor = 1pt</span>
-        <span>✗ Errou = 0pts</span>
+      <div className="mt-8 flex flex-col md:flex-row md:items-center gap-4 md:gap-6 text-xs text-nlw-textMuted border-t border-nlw-card pt-6 justify-center">
+        <span><strong className="text-nlw-yellow text-sm">2p</strong> = Placar exato</span>
+        <span><strong className="text-nlw-green text-sm">1p</strong> = Acertou o vencedor</span>
       </div>
     </div>
   )

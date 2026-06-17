@@ -11,18 +11,18 @@ const links = [
 export default function Nav() {
   const pathname = usePathname()
   return (
-    <nav className="bg-brand-dark text-white shadow-md">
+    <nav className="bg-[#121214] text-white">
       <div className="max-w-4xl mx-auto px-4 flex items-center justify-between h-14">
-        <span className="font-bold text-lg tracking-tight">⚽ Bolão Copa 2026</span>
+        <span className="font-bold text-lg tracking-tight text-white">⚽ Bolão Copa 2026</span>
         <div className="flex gap-4">
           {links.map((l) => (
             <Link
               key={l.href}
               href={l.href}
-              className={`text-sm font-medium px-3 py-1 rounded transition-colors ${
+              className={`text-sm font-medium px-3 py-1 transition-colors ${
                 pathname === l.href
-                  ? 'bg-brand-green text-white'
-                  : 'hover:bg-white/10'
+                  ? 'text-nlw-yellow'
+                  : 'text-nlw-textMuted hover:text-white'
               }`}
             >
               {l.label}

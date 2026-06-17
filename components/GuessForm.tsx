@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { PLAYERS } from '@/lib/players'
+import { getFlag } from '@/lib/flags'
 import type { Match } from '@/lib/supabase'
 
 interface Props {
@@ -65,17 +66,17 @@ export default function GuessForm({ matches }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-        <label className="block text-sm font-semibold text-brand-dark mb-2">Quem é você?</label>
+      <div className="bg-nlw-card rounded-xl p-4 border-none">
+        <label className="block text-sm font-semibold text-white mb-2">Quem é você?</label>
         <div className="flex flex-wrap gap-2">
           {PLAYERS.map((p) => (
             <button
               key={p}
               onClick={() => setPlayer(p)}
-              className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
+              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
                 player === p
-                  ? 'bg-brand-green text-white border-brand-green'
-                  : 'bg-white text-brand-dark border-gray-200 hover:border-brand-green'
+                  ? 'bg-nlw-yellow text-black'
+                  : 'bg-nlw-bg text-nlw-textMuted hover:text-white'
               }`}
             >
               {p}
@@ -92,24 +93,25 @@ export default function GuessForm({ matches }: Props) {
         const done = submitted[match.id]
 
         return (
-          <div key={match.id} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-            <div className="flex justify-between items-start mb-3">
+          <div key={match.id} className="bg-nlw-card rounded-xl p-5 border-none border-b-4 border-b-nlw-yellow">
+            <div className="flex justify-center items-center mb-1 text-center">
               <div>
-                <span className="text-xs font-semibold text-brand-green uppercase tracking-wide">
-                  {match.group_name}
+                <span className="text-sm font-bold text-white tracking-wide">
+                  {getFlag(home)} {home} vs. {getFlag(away)} {away}
                 </span>
-                <p className="text-xs text-gray-400 mt-0.5">{formatTime(match.match_time)}</p>
+                <p className="text-xs text-nlw-textMuted mt-0.5">{formatTime(match.match_time)}</p>
+                {match.group_name && (
+                   <div className="mt-1 text-[10px] text-nlw-yellow uppercase">{match.group_name}</div>
+                )}
               </div>
-              {!open && (
-                <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
-                  Encerrado
-                </span>
-              )}
             </div>
 
-            <div className="flex items-center gap-3 mb-4">
-              <span className="flex-1 text-right font-semibold text-brand-dark">{home}</span>
-              <div className="flex items-center gap-1">
+            <div className="flex items-center justify-center gap-4 mb-5 mt-4">
+              <span className="flex-1 text-right font-bold text-white text-sm">
+                <span className="text-xl mr-1">{getFlag(home)}</span>
+                {home}
+              </span>
+              <div className="flex items-center gap-3">
                 <input
                   type="number"
                   min={0}
@@ -119,9 +121,9 @@ export default function GuessForm({ matches }: Props) {
                   onChange={(e) =>
                     setGuesses((g) => ({ ...g, [match.id]: { ...g[match.id], home: e.target.value } }))
                   }
-                  className="w-12 h-10 text-center border border-gray-200 rounded-lg text-lg font-bold focus:outline-none focus:border-brand-green disabled:bg-gray-50 disabled:text-gray-400"
+                  className="w-12 h-12 bg-nlw-input text-white text-center rounded text-xl font-bold focus:outline-none disabled:opacity-50"
                 />
-                <span className="text-gray-400 font-bold">×</span>
+                <span className="text-nlw-textMuted font-bold">×</span>
                 <input
                   type="number"
                   min={0}
@@ -131,10 +133,13 @@ export default function GuessForm({ matches }: Props) {
                   onChange={(e) =>
                     setGuesses((g) => ({ ...g, [match.id]: { ...g[match.id], away: e.target.value } }))
                   }
-                  className="w-12 h-10 text-center border border-gray-200 rounded-lg text-lg font-bold focus:outline-none focus:border-brand-green disabled:bg-gray-50 disabled:text-gray-400"
+                  className="w-12 h-12 bg-nlw-input text-white text-center rounded text-xl font-bold focus:outline-none disabled:opacity-50"
                 />
               </div>
-              <span className="flex-1 font-semibold text-brand-dark">{away}</span>
+              <span className="flex-1 text-left font-bold text-white text-sm">
+                {away}
+                <span className="text-xl ml-1">{getFlag(away)}</span>
+              </span>
             </div>
 
             {error[match.id] && (
@@ -142,16 +147,20 @@ export default function GuessForm({ matches }: Props) {
             )}
 
             {done ? (
-              <div className="text-center text-sm text-brand-green font-semibold">
-                ✓ Palpite enviado!
+              <div className="w-full bg-nlw-bg text-nlw-green py-3 rounded text-sm font-bold text-center uppercase">
+                ✓ Palpite Confimado
+              </div>
+            ) : !open ? (
+              <div className="w-full bg-nlw-input text-nlw-textMuted py-3 rounded text-sm font-bold text-center uppercase">
+                Tempo Esgotado
               </div>
             ) : (
               <button
                 onClick={() => submitGuess(match.id)}
-                disabled={!open || loading[match.id] || !player}
-                className="w-full bg-brand-green text-white py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                disabled={loading[match.id] || !player}
+                className="w-full bg-nlw-green text-white py-3 rounded text-sm font-bold uppercase transition-colors hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {loading[match.id] ? 'Enviando...' : 'Enviar Palpite'}
+                {loading[match.id] ? 'Enviando...' : 'Confirmar Palpite ✓'}
               </button>
             )}
           </div>

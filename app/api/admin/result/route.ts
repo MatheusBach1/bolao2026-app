@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { calcPoints } from '@/lib/scoring'
+import { revalidatePath } from 'next/cache'
 
 export async function POST(req: NextRequest) {
   const { match_id, result_home, result_away } = await req.json()
@@ -47,6 +48,10 @@ export async function POST(req: NextRequest) {
       await supabaseAdmin.from('guesses').update({ points: u.points }).eq('id', u.id)
     }
   }
+
+  revalidatePath('/')
+  revalidatePath('/admin')
+  revalidatePath('/placar')
 
   return NextResponse.json({ success: true })
 }

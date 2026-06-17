@@ -21,11 +21,11 @@ export default async function HomePage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-brand-dark mb-2">⚽ Palpites</h1>
-      <p className="text-gray-500 mb-6 text-sm">Jogos das próximas 24 horas</p>
+      <h1 className="text-2xl font-bold text-white mb-2">⚽ Palpites</h1>
+      <p className="text-nlw-textHover mb-6 text-sm">Jogos das próximas 24 horas</p>
       {matches.length === 0 ? (
-        <div className="bg-white rounded-xl p-8 text-center shadow-sm border border-gray-100">
-          <p className="text-gray-500">Nenhum jogo nas próximas 24 horas.</p>
+        <div className="bg-nlw-card rounded-xl p-8 text-center border-none">
+          <p className="text-nlw-textMuted">Nenhum jogo nas próximas 24 horas.</p>
         </div>
       ) : (
         <GuessForm matches={matches} />

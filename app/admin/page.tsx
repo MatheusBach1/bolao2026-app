@@ -27,8 +27,8 @@ export default async function AdminPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-brand-dark mb-2">🔧 Admin</h1>
-      <p className="text-gray-500 mb-6 text-sm">Inserir resultados e cadastrar jogos</p>
+      <h1 className="text-2xl font-bold text-white mb-2">🔧 Admin</h1>
+      <p className="text-nlw-textHover mb-6 text-sm">Inserir resultados e cadastrar jogos</p>
       <AdminPanel pendingMatches={pending} allMatches={all} />
     </div>
   )
