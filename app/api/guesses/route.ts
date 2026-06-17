@@ -2,6 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { PLAYERS } from '@/lib/players'
 
+export async function GET(req: NextRequest) {
+  const player = req.nextUrl.searchParams.get('player')
+  if (!player || !PLAYERS.includes(player as typeof PLAYERS[number])) {
+    return NextResponse.json({ error: 'Participante inválido.' }, { status: 400 })
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('guesses')
+    .select('match_id, guess_home, guess_away')
+    .eq('player_name', player)
+
+  if (error) return NextResponse.json({ error: 'Erro ao buscar palpites.' }, { status: 500 })
+
+  return NextResponse.json({ guesses: data ?? [] })
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json()
   const { player_name, match_id, guess_home, guess_away } = body

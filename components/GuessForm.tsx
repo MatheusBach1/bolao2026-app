@@ -13,9 +13,13 @@ interface GuessInput {
   away: string
 }
 
+type ExistingGuess = { match_id: number; guess_home: number; guess_away: number }
+
 export default function GuessForm({ matches }: Props) {
   const [player, setPlayer] = useState<string>('')
   const [guesses, setGuesses] = useState<Record<number, GuessInput>>({})
+  const [existing, setExisting] = useState<Record<number, ExistingGuess>>({})
+  const [loadingPlayer, setLoadingPlayer] = useState(false)
   const [submitted, setSubmitted] = useState<Record<number, boolean>>({})
   const [loading, setLoading] = useState<Record<number, boolean>>({})
   const [error, setError] = useState<Record<number, string>>({})
@@ -33,6 +37,28 @@ export default function GuessForm({ matches }: Props) {
       hour: '2-digit',
       minute: '2-digit',
     })
+  }
+
+  async function selectPlayer(name: string) {
+    setPlayer(name)
+    setGuesses({})
+    setSubmitted({})
+    setError({})
+    setExisting({})
+    setLoadingPlayer(true)
+    try {
+      const res = await fetch(`/api/guesses?player=${encodeURIComponent(name)}`)
+      const data = await res.json()
+      if (res.ok && data.guesses) {
+        const map: Record<number, ExistingGuess> = {}
+        for (const g of data.guesses as ExistingGuess[]) {
+          map[g.match_id] = g
+        }
+        setExisting(map)
+      }
+    } finally {
+      setLoadingPlayer(false)
+    }
   }
 
   async function submitGuess(matchId: number) {
@@ -66,13 +92,14 @@ export default function GuessForm({ matches }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-nlw-card rounded-xl p-4 border-none">
+      {/* Seleção de jogador */}
+      <div className="bg-nlw-card rounded-xl p-4">
         <label className="block text-sm font-semibold text-white mb-2">Quem é você?</label>
         <div className="flex flex-wrap gap-2">
           {PLAYERS.map((p) => (
             <button
               key={p}
-              onClick={() => setPlayer(p)}
+              onClick={() => selectPlayer(p)}
               className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
                 player === p
                   ? 'bg-nlw-yellow text-black'
@@ -83,6 +110,9 @@ export default function GuessForm({ matches }: Props) {
             </button>
           ))}
         </div>
+        {loadingPlayer && (
+          <p className="text-xs text-nlw-textHover mt-2">Carregando palpites...</p>
+        )}
       </div>
 
       {matches.map((match) => {
@@ -90,10 +120,12 @@ export default function GuessForm({ matches }: Props) {
         const home = teams[0] ?? 'Time A'
         const away = teams[1] ?? 'Time B'
         const open = canGuess(match)
-        const done = submitted[match.id]
+        // Already submitted this session OR has an existing guess in DB
+        const existingGuess = existing[match.id]
+        const done = submitted[match.id] || !!existingGuess
 
         return (
-          <div key={match.id} className="bg-nlw-card rounded-xl p-5 border-none border-b-4 border-b-nlw-yellow">
+          <div key={match.id} className="bg-nlw-card rounded-xl p-5 border-b-4 border-b-nlw-yellow">
             <div className="flex justify-center items-center mb-1 text-center">
               <div>
                 <span className="text-sm font-bold text-white tracking-wide">
@@ -101,7 +133,7 @@ export default function GuessForm({ matches }: Props) {
                 </span>
                 <p className="text-xs text-nlw-textMuted mt-0.5">{formatTime(match.match_time)}</p>
                 {match.group_name && (
-                   <div className="mt-1 text-[10px] text-nlw-yellow uppercase">{match.group_name}</div>
+                  <div className="mt-1 text-[10px] text-nlw-yellow uppercase">{match.group_name}</div>
                 )}
               </div>
             </div>
@@ -116,8 +148,12 @@ export default function GuessForm({ matches }: Props) {
                   type="number"
                   min={0}
                   max={99}
-                  disabled={!open || done || !player}
-                  value={guesses[match.id]?.home ?? ''}
+                  disabled={!open || done || !player || loadingPlayer}
+                  value={
+                    existingGuess
+                      ? existingGuess.guess_home
+                      : guesses[match.id]?.home ?? ''
+                  }
                   onChange={(e) =>
                     setGuesses((g) => ({ ...g, [match.id]: { ...g[match.id], home: e.target.value } }))
                   }
@@ -128,8 +164,12 @@ export default function GuessForm({ matches }: Props) {
                   type="number"
                   min={0}
                   max={99}
-                  disabled={!open || done || !player}
-                  value={guesses[match.id]?.away ?? ''}
+                  disabled={!open || done || !player || loadingPlayer}
+                  value={
+                    existingGuess
+                      ? existingGuess.guess_away
+                      : guesses[match.id]?.away ?? ''
+                  }
                   onChange={(e) =>
                     setGuesses((g) => ({ ...g, [match.id]: { ...g[match.id], away: e.target.value } }))
                   }
@@ -143,12 +183,12 @@ export default function GuessForm({ matches }: Props) {
             </div>
 
             {error[match.id] && (
-              <p className="text-red-500 text-xs mb-2">{error[match.id]}</p>
+              <p className="text-red-500 text-xs mb-2 text-center">{error[match.id]}</p>
             )}
 
             {done ? (
               <div className="w-full bg-nlw-bg text-nlw-green py-3 rounded text-sm font-bold text-center uppercase">
-                ✓ Palpite Confimado
+                ✓ Palpite Confirmado
               </div>
             ) : !open ? (
               <div className="w-full bg-nlw-input text-nlw-textMuted py-3 rounded text-sm font-bold text-center uppercase">
@@ -157,7 +197,7 @@ export default function GuessForm({ matches }: Props) {
             ) : (
               <button
                 onClick={() => submitGuess(match.id)}
-                disabled={loading[match.id] || !player}
+                disabled={loading[match.id] || !player || loadingPlayer}
                 className="w-full bg-nlw-green text-white py-3 rounded text-sm font-bold uppercase transition-colors hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {loading[match.id] ? 'Enviando...' : 'Confirmar Palpite ✓'}
