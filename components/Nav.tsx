@@ -6,6 +6,7 @@ const links = [
   { href: '/', label: 'Palpites' },
   { href: '/painel', label: 'Painel' },
   { href: '/placar', label: 'Placar' },
+  { href: '/classificacao', label: 'Classificação' },
 ]
 
 export default function Nav() {
@@ -13,8 +14,8 @@ export default function Nav() {
   return (
     <nav className="bg-[#121214] text-white">
       <div className="max-w-4xl mx-auto px-4 flex items-center justify-between h-14">
-        <span className="font-bold text-lg tracking-tight text-white">⚽ Bolão Copa 2026</span>
-        <div className="flex gap-4">
+        <span className="font-bold text-lg tracking-tight text-white hidden sm:block">⚽ Bolão Copa 2026</span>
+        <div className="flex gap-1 sm:gap-4">
           {links.map((l) => (
             <Link
               key={l.href}

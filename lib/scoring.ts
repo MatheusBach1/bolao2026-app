@@ -9,6 +9,9 @@ export function calcPoints(
   const realWinner =
     resultHome > resultAway ? 1 : resultHome < resultAway ? -1 : 0
 
+  // Draw: only exact score counts
+  if (realWinner === 0) return 0
+
   const guessWinner =
     guessHome > guessAway ? 1 : guessHome < guessAway ? -1 : 0
 
