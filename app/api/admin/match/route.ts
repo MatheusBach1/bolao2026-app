@@ -15,7 +15,8 @@ export async function POST(req: NextRequest) {
   })
 
   if (error) {
-    return NextResponse.json({ error: 'Erro ao cadastrar jogo.' }, { status: 500 })
+    console.error('Supabase error inserting match:', error)
+    return NextResponse.json({ error: 'Erro ao cadastrar jogo.', details: error.message }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })
