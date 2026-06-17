@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin as supabase } from '@/lib/supabase'
 import GuessForm from '@/components/GuessForm'
 import type { Match } from '@/lib/supabase'
 

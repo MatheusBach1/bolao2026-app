@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin as supabase } from '@/lib/supabase'
 import AdminPanel from '@/components/AdminPanel'
 import type { Match } from '@/lib/supabase'
 
