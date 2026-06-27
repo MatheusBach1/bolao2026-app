@@ -27,23 +27,22 @@ export default async function EliminatoriasPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white mb-2">🏆 Eliminatórias</h1>
-      <p className="text-nlw-textHover mb-1 text-sm">Copa do Mundo 2026 — Fase eliminatória</p>
-      <p className="text-nlw-textHover mb-6 text-xs">
-        Cadastre os jogos pela aba Admin usando as fases:{' '}
-        <span className="text-nlw-yellow font-mono">segunda-rodada · oitavas · quartas · semifinal · final</span>
-      </p>
+      <h1 className="text-2xl font-bold text-white mb-1">🏆 Eliminatórias</h1>
+      <p className="text-nlw-textHover mb-4 text-sm">Copa do Mundo 2026</p>
 
-      {total === 0 ? (
-        <div className="bg-nlw-card rounded-xl p-8 text-center">
-          <p className="text-nlw-textMuted">Nenhum jogo de eliminatórias cadastrado ainda.</p>
-          <p className="text-nlw-textHover text-xs mt-2">
-            No admin, cadastre um jogo com a fase <span className="text-nlw-yellow font-mono">oitavas</span> (por exemplo) e ele aparecerá aqui.
-          </p>
-        </div>
-      ) : (
-        <KnockoutBracket matchesByRound={matchesByRound} />
-      )}
+      <div className="bg-nlw-card rounded-xl overflow-hidden">
+        {total === 0 ? (
+          <div className="p-8 text-center">
+            <p className="text-nlw-textMuted">Nenhum jogo de eliminatórias cadastrado ainda.</p>
+            <p className="text-nlw-textHover text-xs mt-2">
+              No admin, cadastre um jogo com a fase{' '}
+              <span className="text-nlw-yellow font-mono">oitavas</span> (por exemplo).
+            </p>
+          </div>
+        ) : (
+          <KnockoutBracket matchesByRound={matchesByRound} />
+        )}
+      </div>
     </div>
   )
 }
