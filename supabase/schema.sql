@@ -3,6 +3,10 @@ create table if not exists matches (
   teams text not null,
   match_time timestamptz not null,
   group_name text not null,
+  -- round: 'grupo' | 'segunda-rodada' | 'oitavas' | 'quartas' | 'semifinal' | 'final'
+  -- slot: position within the round (1-based), used to build the bracket order
+  round text not null default 'grupo',
+  slot integer,
   result_home integer,
   result_away integer,
   api_match_id text,
@@ -23,3 +27,4 @@ create table if not exists guesses (
 create index if not exists idx_guesses_match_id on guesses(match_id);
 create index if not exists idx_guesses_player_name on guesses(player_name);
 create index if not exists idx_matches_match_time on matches(match_time);
+create index if not exists idx_matches_round on matches(round);

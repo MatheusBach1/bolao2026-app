@@ -7,15 +7,30 @@ interface Props {
   allMatches: Match[]
 }
 
+const ROUND_OPTIONS = [
+  { value: 'grupo',          label: 'Fase de Grupos' },
+  { value: 'segunda-rodada', label: 'Segunda Rodada' },
+  { value: 'oitavas',        label: 'Oitavas de Final' },
+  { value: 'quartas',        label: 'Quartas de Final' },
+  { value: 'semifinal',      label: 'Semifinais' },
+  { value: 'final',          label: 'Final' },
+]
+
+const ROUND_LABEL: Record<string, string> = Object.fromEntries(ROUND_OPTIONS.map((r) => [r.value, r.label]))
+
 export default function AdminPanel({ pendingMatches, allMatches }: Props) {
   const [results, setResults] = useState<Record<number, { home: string; away: string }>>({})
   const [saving, setSaving] = useState<Record<number, boolean>>({})
   const [saved, setSaved] = useState<Record<number, boolean>>({})
   const [resErr, setResErr] = useState<Record<number, string>>({})
 
-  const [newMatch, setNewMatch] = useState({ teams: '', match_time: '', group_name: '' })
+  const [newMatch, setNewMatch] = useState({
+    teams: '', match_time: '', group_name: '', round: 'grupo', slot: '',
+  })
   const [addLoading, setAddLoading] = useState(false)
   const [addMsg, setAddMsg] = useState('')
+
+  const isKnockout = newMatch.round !== 'grupo'
 
   async function saveResult(matchId: number) {
     const r = results[matchId]
@@ -46,7 +61,10 @@ export default function AdminPanel({ pendingMatches, allMatches }: Props) {
 
   async function addMatch() {
     if (!newMatch.teams || !newMatch.match_time || !newMatch.group_name) {
-      return setAddMsg('Preencha todos os campos.')
+      return setAddMsg('Preencha todos os campos obrigatórios.')
+    }
+    if (isKnockout && !newMatch.slot) {
+      return setAddMsg('Informe a posição (slot) do jogo no bracket.')
     }
     setAddLoading(true)
     setAddMsg('')
@@ -54,12 +72,18 @@ export default function AdminPanel({ pendingMatches, allMatches }: Props) {
       const res = await fetch('/api/admin/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMatch),
+        body: JSON.stringify({
+          teams: newMatch.teams,
+          match_time: newMatch.match_time,
+          group_name: newMatch.group_name,
+          round: newMatch.round,
+          slot: newMatch.slot ? Number(newMatch.slot) : null,
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setAddMsg('Jogo cadastrado com sucesso!')
-      setNewMatch({ teams: '', match_time: '', group_name: '' })
+      setNewMatch({ teams: '', match_time: '', group_name: '', round: 'grupo', slot: '' })
     } catch (err: unknown) {
       setAddMsg((err as Error).message)
     } finally {
@@ -78,7 +102,7 @@ export default function AdminPanel({ pendingMatches, allMatches }: Props) {
       {/* Add Match */}
       <div className="bg-nlw-card rounded-xl p-5">
         <h2 className="font-bold text-white mb-4">Cadastrar Jogo</h2>
-        <div className="grid sm:grid-cols-3 gap-3 mb-3">
+        <div className="grid sm:grid-cols-2 gap-3 mb-3">
           <div>
             <label className="text-xs text-nlw-textMuted mb-1 block">Times (ex: Brasil x Argentina)</label>
             <input
@@ -99,15 +123,48 @@ export default function AdminPanel({ pendingMatches, allMatches }: Props) {
             />
           </div>
           <div>
-            <label className="text-xs text-nlw-textMuted mb-1 block">Grupo / Fase</label>
+            <label className="text-xs text-nlw-textMuted mb-1 block">Fase / Rodada</label>
+            <select
+              value={newMatch.round}
+              onChange={(e) => setNewMatch((n) => ({ ...n, round: e.target.value, group_name: e.target.value === 'grupo' ? n.group_name : ROUND_LABEL[e.target.value] }))}
+              className="w-full bg-nlw-input border border-transparent text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-nlw-yellow"
+            >
+              {ROUND_OPTIONS.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-nlw-textMuted mb-1 block">
+              {isKnockout ? 'Grupo / Fase (rótulo exibido)' : 'Grupo'}
+            </label>
             <input
               type="text"
-              placeholder="Grupo A"
+              placeholder={isKnockout ? 'Ex: Oitavas de Final' : 'Grupo A'}
               value={newMatch.group_name}
               onChange={(e) => setNewMatch((n) => ({ ...n, group_name: e.target.value }))}
               className="w-full bg-nlw-input border border-transparent text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-nlw-yellow placeholder:text-nlw-textHover"
             />
           </div>
+          {isKnockout && (
+            <div>
+              <label className="text-xs text-nlw-textMuted mb-1 block">
+                Posição no bracket (slot){' '}
+                <span className="text-nlw-textHover">
+                  — Oitavas: 1–8 · Quartas: 1–4 · Semis: 1–2 · Final: 1
+                </span>
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={16}
+                placeholder="1"
+                value={newMatch.slot}
+                onChange={(e) => setNewMatch((n) => ({ ...n, slot: e.target.value }))}
+                className="w-full bg-nlw-input border border-transparent text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-nlw-yellow placeholder:text-nlw-textHover"
+              />
+            </div>
+          )}
         </div>
         <button
           onClick={addMatch}
@@ -190,7 +247,7 @@ export default function AdminPanel({ pendingMatches, allMatches }: Props) {
             <thead>
               <tr className="bg-nlw-input text-xs text-nlw-textMuted uppercase">
                 <th className="py-2 px-4 text-left">Jogo</th>
-                <th className="py-2 px-4 text-left">Grupo</th>
+                <th className="py-2 px-4 text-left">Fase</th>
                 <th className="py-2 px-4 text-center">Horário</th>
                 <th className="py-2 px-4 text-center">Resultado</th>
               </tr>

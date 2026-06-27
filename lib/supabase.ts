@@ -1,10 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
 
+export type Round = 'grupo' | 'segunda-rodada' | 'oitavas' | 'quartas' | 'semifinal' | 'final'
+
 export type Match = {
   id: number
   teams: string
   match_time: string
   group_name: string
+  round: Round
+  slot: number | null
   result_home: number | null
   result_away: number | null
   api_match_id: string | null
