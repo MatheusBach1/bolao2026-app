@@ -57,7 +57,7 @@ export default async function PainelPage() {
               label={PHASE_LABEL[phase] ?? phase}
               matches={matchesByPhase[phase]}
               guessesByMatch={guessesByMatch}
-              defaultOpen={phase === 'grupo'}
+              defaultOpen={phase === 'segunda-rodada'}
             />
           ))}
         </div>
