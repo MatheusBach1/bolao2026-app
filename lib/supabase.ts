@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 export type Round = 'grupo' | 'segunda-rodada' | 'oitavas' | 'quartas' | 'semifinal' | 'final'
+export type PenaltyWinner = 'home' | 'away'
 
 export type Match = {
   id: number
@@ -11,6 +12,7 @@ export type Match = {
   slot: number | null
   result_home: number | null
   result_away: number | null
+  penalty_winner: PenaltyWinner | null
   api_match_id: string | null
   created_at: string
 }
@@ -21,6 +23,7 @@ export type Guess = {
   match_id: number
   guess_home: number
   guess_away: number
+  guess_penalty_winner: PenaltyWinner | null
   submitted_at: string
   points: number | null
 }

@@ -11,9 +11,15 @@ interface Props {
 interface GuessInput {
   home: string
   away: string
+  penaltyWinner: '' | 'home' | 'away'
 }
 
-type ExistingGuess = { match_id: number; guess_home: number; guess_away: number }
+type ExistingGuess = {
+  match_id: number
+  guess_home: number
+  guess_away: number
+  guess_penalty_winner: 'home' | 'away' | null
+}
 
 export default function GuessForm({ matches }: Props) {
   const [player, setPlayer] = useState<string>('')
@@ -61,11 +67,15 @@ export default function GuessForm({ matches }: Props) {
     }
   }
 
-  async function submitGuess(matchId: number) {
+  async function submitGuess(matchId: number, isKnockout: boolean) {
     if (!player) return setError((e) => ({ ...e, [matchId]: 'Selecione seu nome.' }))
     const g = guesses[matchId]
     if (!g || g.home === '' || g.away === '') {
       return setError((e) => ({ ...e, [matchId]: 'Preencha o placar.' }))
+    }
+    const isDraw = Number(g.home) === Number(g.away)
+    if (isKnockout && isDraw && !g.penaltyWinner) {
+      return setError((e) => ({ ...e, [matchId]: 'Selecione quem vence nos pênaltis.' }))
     }
     setLoading((l) => ({ ...l, [matchId]: true }))
     setError((e) => ({ ...e, [matchId]: '' }))
@@ -78,6 +88,7 @@ export default function GuessForm({ matches }: Props) {
           match_id: matchId,
           guess_home: Number(g.home),
           guess_away: Number(g.away),
+          guess_penalty_winner: (isKnockout && isDraw && g.penaltyWinner) ? g.penaltyWinner : null,
         }),
       })
       const data = await res.json()
@@ -119,10 +130,18 @@ export default function GuessForm({ matches }: Props) {
         const teams = match.teams.split(' x ')
         const home = teams[0] ?? 'Time A'
         const away = teams[1] ?? 'Time B'
+        const isKnockout = match.round !== 'grupo'
         const open = canGuess(match)
-        // Already submitted this session OR has an existing guess in DB
         const existingGuess = existing[match.id]
         const done = submitted[match.id] || !!existingGuess
+
+        const currentHome = existingGuess ? String(existingGuess.guess_home) : (guesses[match.id]?.home ?? '')
+        const currentAway = existingGuess ? String(existingGuess.guess_away) : (guesses[match.id]?.away ?? '')
+        const isDraw = currentHome !== '' && currentAway !== '' && Number(currentHome) === Number(currentAway)
+        const showPenalties = isKnockout && isDraw && !done
+
+        const existingPenalty = existingGuess?.guess_penalty_winner ?? null
+        const selectedPenalty = done ? existingPenalty : (guesses[match.id]?.penaltyWinner ?? '')
 
         return (
           <div key={match.id} className="bg-nlw-card rounded-xl p-5 border-b-4 border-b-nlw-yellow">
@@ -132,13 +151,18 @@ export default function GuessForm({ matches }: Props) {
                   {getFlag(home)} {home} vs. {getFlag(away)} {away}
                 </span>
                 <p className="text-xs text-nlw-textMuted mt-0.5">{formatTime(match.match_time)}</p>
-                {match.group_name && (
-                  <div className="mt-1 text-[10px] text-nlw-yellow uppercase">{match.group_name}</div>
-                )}
+                <div className="flex items-center justify-center gap-2 mt-1">
+                  {match.group_name && (
+                    <span className="text-[10px] text-nlw-yellow uppercase">{match.group_name}</span>
+                  )}
+                  {isKnockout && (
+                    <span className="text-[10px] text-blue-400 uppercase font-semibold">· Eliminatória</span>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-center gap-4 mb-5 mt-4">
+            <div className="flex items-center justify-center gap-4 mb-4 mt-4">
               <span className="flex-1 text-right font-bold text-white text-sm">
                 <span className="text-xl mr-1">{getFlag(home)}</span>
                 {home}
@@ -149,13 +173,9 @@ export default function GuessForm({ matches }: Props) {
                   min={0}
                   max={99}
                   disabled={!open || done || !player || loadingPlayer}
-                  value={
-                    existingGuess
-                      ? existingGuess.guess_home
-                      : guesses[match.id]?.home ?? ''
-                  }
+                  value={currentHome}
                   onChange={(e) =>
-                    setGuesses((g) => ({ ...g, [match.id]: { ...g[match.id], home: e.target.value } }))
+                    setGuesses((g) => { const prev = g[match.id] ?? { home: '', away: '', penaltyWinner: '' as const }; return { ...g, [match.id]: { ...prev, home: e.target.value } } })
                   }
                   className="w-12 h-12 bg-nlw-input text-white text-center rounded text-xl font-bold focus:outline-none disabled:opacity-50"
                 />
@@ -165,13 +185,9 @@ export default function GuessForm({ matches }: Props) {
                   min={0}
                   max={99}
                   disabled={!open || done || !player || loadingPlayer}
-                  value={
-                    existingGuess
-                      ? existingGuess.guess_away
-                      : guesses[match.id]?.away ?? ''
-                  }
+                  value={currentAway}
                   onChange={(e) =>
-                    setGuesses((g) => ({ ...g, [match.id]: { ...g[match.id], away: e.target.value } }))
+                    setGuesses((g) => { const prev = g[match.id] ?? { home: '', away: '', penaltyWinner: '' as const }; return { ...g, [match.id]: { ...prev, away: e.target.value } } })
                   }
                   className="w-12 h-12 bg-nlw-input text-white text-center rounded text-xl font-bold focus:outline-none disabled:opacity-50"
                 />
@@ -181,6 +197,43 @@ export default function GuessForm({ matches }: Props) {
                 <span className="text-xl ml-1">{getFlag(away)}</span>
               </span>
             </div>
+
+            {/* Penalty winner picker — appears when knockout + draw */}
+            {(showPenalties || (done && isKnockout && isDraw)) && (
+              <div className="mb-4 p-3 bg-nlw-input rounded-lg">
+                <p className="text-xs text-nlw-yellow font-semibold mb-2 text-center">
+                  Empate — quem vence nos pênaltis?
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    disabled={done || !open || !player}
+                    onClick={() =>
+                      setGuesses((g) => ({ ...g, [match.id]: { ...g[match.id], penaltyWinner: 'home' } }))
+                    }
+                    className={`flex-1 py-2 rounded text-sm font-bold transition-colors disabled:cursor-default ${
+                      selectedPenalty === 'home'
+                        ? 'bg-nlw-yellow text-black'
+                        : 'bg-nlw-card text-white hover:bg-[#2a2a2e] disabled:opacity-60'
+                    }`}
+                  >
+                    {getFlag(home)} {home}
+                  </button>
+                  <button
+                    disabled={done || !open || !player}
+                    onClick={() =>
+                      setGuesses((g) => ({ ...g, [match.id]: { ...g[match.id], penaltyWinner: 'away' } }))
+                    }
+                    className={`flex-1 py-2 rounded text-sm font-bold transition-colors disabled:cursor-default ${
+                      selectedPenalty === 'away'
+                        ? 'bg-nlw-yellow text-black'
+                        : 'bg-nlw-card text-white hover:bg-[#2a2a2e] disabled:opacity-60'
+                    }`}
+                  >
+                    {getFlag(away)} {away}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {error[match.id] && (
               <p className="text-red-500 text-xs mb-2 text-center">{error[match.id]}</p>
@@ -196,7 +249,7 @@ export default function GuessForm({ matches }: Props) {
               </div>
             ) : (
               <button
-                onClick={() => submitGuess(match.id)}
+                onClick={() => submitGuess(match.id, isKnockout)}
                 disabled={loading[match.id] || !player || loadingPlayer}
                 className="w-full bg-nlw-green text-white py-3 rounded text-sm font-bold uppercase transition-colors hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >

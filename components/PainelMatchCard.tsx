@@ -99,14 +99,23 @@ export default function PainelMatchCard({ match, guesses }: Props) {
         <div className="divide-y divide-nlw-input">
           {PLAYERS.map((player) => {
             const g = guessByPlayer.get(player)
+            const teams = match.teams.split(' x ')
+            const home = teams[0]?.trim() ?? 'Time A'
+            const away = teams[1]?.trim() ?? 'Time B'
+            const penaltyLabel = g?.guess_penalty_winner
+              ? `Pen: ${g.guess_penalty_winner === 'home' ? home : away}`
+              : null
             return (
               <div key={player} className="px-5 py-3 flex items-center justify-between">
                 <span className="text-sm font-medium text-nlw-textMuted">{player}</span>
                 {g ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
                     <span className="text-sm font-bold text-white">
                       {g.guess_home} × {g.guess_away}
                     </span>
+                    {penaltyLabel && (
+                      <span className="text-xs text-blue-400 font-semibold">{penaltyLabel}</span>
+                    )}
                     {hasResult && pointsBadge(g.points)}
                   </div>
                 ) : (

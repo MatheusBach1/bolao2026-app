@@ -19,7 +19,7 @@ const ROUND_OPTIONS = [
 const ROUND_LABEL: Record<string, string> = Object.fromEntries(ROUND_OPTIONS.map((r) => [r.value, r.label]))
 
 export default function AdminPanel({ pendingMatches, allMatches }: Props) {
-  const [results, setResults] = useState<Record<number, { home: string; away: string }>>({})
+  const [results, setResults] = useState<Record<number, { home: string; away: string; penaltyWinner: '' | 'home' | 'away' }>>({})
   const [saving, setSaving] = useState<Record<number, boolean>>({})
   const [saved, setSaved] = useState<Record<number, boolean>>({})
   const [resErr, setResErr] = useState<Record<number, string>>({})
@@ -32,10 +32,14 @@ export default function AdminPanel({ pendingMatches, allMatches }: Props) {
 
   const isKnockout = newMatch.round !== 'grupo'
 
-  async function saveResult(matchId: number) {
+  async function saveResult(matchId: number, isKnockoutMatch: boolean) {
     const r = results[matchId]
     if (!r || r.home === '' || r.away === '') {
       return setResErr((e) => ({ ...e, [matchId]: 'Preencha os dois placares.' }))
+    }
+    const isDraw = Number(r.home) === Number(r.away)
+    if (isKnockoutMatch && isDraw && !r.penaltyWinner) {
+      return setResErr((e) => ({ ...e, [matchId]: 'Jogo empatado em fase eliminatória: selecione quem venceu nos pênaltis.' }))
     }
     setSaving((s) => ({ ...s, [matchId]: true }))
     setResErr((e) => ({ ...e, [matchId]: '' }))
@@ -47,6 +51,7 @@ export default function AdminPanel({ pendingMatches, allMatches }: Props) {
           match_id: matchId,
           result_home: Number(r.home),
           result_away: Number(r.away),
+          penalty_winner: (isKnockoutMatch && isDraw && r.penaltyWinner) ? r.penaltyWinner : null,
         }),
       })
       const data = await res.json()
@@ -187,11 +192,18 @@ export default function AdminPanel({ pendingMatches, allMatches }: Props) {
               const teams = match.teams.split(' x ')
               const home = teams[0] ?? 'Time A'
               const away = teams[1] ?? 'Time B'
+              const isKnockoutMatch = match.round !== 'grupo'
+              const curHome = results[match.id]?.home ?? ''
+              const curAway = results[match.id]?.away ?? ''
+              const isDraw = curHome !== '' && curAway !== '' && Number(curHome) === Number(curAway)
               return (
                 <div key={match.id} className="bg-nlw-card rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs bg-nlw-yellow/20 text-nlw-yellow px-2 py-0.5 rounded-full font-semibold">{match.group_name}</span>
                     <span className="text-xs text-nlw-textMuted">{formatTime(match.match_time)}</span>
+                    {isKnockoutMatch && (
+                      <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-semibold">Eliminatória</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="flex-1 text-right font-semibold text-white">{home}</span>
@@ -199,9 +211,9 @@ export default function AdminPanel({ pendingMatches, allMatches }: Props) {
                       type="number"
                       min={0}
                       disabled={saved[match.id]}
-                      value={results[match.id]?.home ?? ''}
+                      value={curHome}
                       onChange={(e) =>
-                        setResults((r) => ({ ...r, [match.id]: { ...r[match.id], home: e.target.value } }))
+                        setResults((r) => { const prev = r[match.id] ?? { home: '', away: '', penaltyWinner: '' as const }; return { ...r, [match.id]: { ...prev, home: e.target.value } } })
                       }
                       className="w-12 h-12 text-center bg-nlw-input text-white rounded text-xl font-bold focus:outline-none disabled:opacity-50"
                     />
@@ -210,20 +222,52 @@ export default function AdminPanel({ pendingMatches, allMatches }: Props) {
                       type="number"
                       min={0}
                       disabled={saved[match.id]}
-                      value={results[match.id]?.away ?? ''}
+                      value={curAway}
                       onChange={(e) =>
-                        setResults((r) => ({ ...r, [match.id]: { ...r[match.id], away: e.target.value } }))
+                        setResults((r) => { const prev = r[match.id] ?? { home: '', away: '', penaltyWinner: '' as const }; return { ...r, [match.id]: { ...prev, away: e.target.value } } })
                       }
                       className="w-12 h-12 text-center bg-nlw-input text-white rounded text-xl font-bold focus:outline-none disabled:opacity-50"
                     />
                     <span className="flex-1 font-semibold text-white">{away}</span>
+                  </div>
+
+                  {/* Penalty winner — only shown when knockout + draw */}
+                  {isKnockoutMatch && isDraw && !saved[match.id] && (
+                    <div className="mt-3 p-3 bg-nlw-input rounded-lg">
+                      <p className="text-xs text-nlw-yellow font-semibold mb-2">Empate — quem venceu nos pênaltis?</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setResults((r) => ({ ...r, [match.id]: { ...r[match.id], penaltyWinner: 'home' } }))}
+                          className={`flex-1 py-2 rounded text-sm font-bold transition-colors ${
+                            results[match.id]?.penaltyWinner === 'home'
+                              ? 'bg-nlw-yellow text-black'
+                              : 'bg-nlw-card text-white hover:bg-[#2a2a2e]'
+                          }`}
+                        >
+                          {home}
+                        </button>
+                        <button
+                          onClick={() => setResults((r) => ({ ...r, [match.id]: { ...r[match.id], penaltyWinner: 'away' } }))}
+                          className={`flex-1 py-2 rounded text-sm font-bold transition-colors ${
+                            results[match.id]?.penaltyWinner === 'away'
+                              ? 'bg-nlw-yellow text-black'
+                              : 'bg-nlw-card text-white hover:bg-[#2a2a2e]'
+                          }`}
+                        >
+                          {away}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-3 flex items-center justify-end gap-3">
                     {saved[match.id] ? (
-                      <span className="text-nlw-green text-sm font-bold ml-2">✓ Salvo</span>
+                      <span className="text-nlw-green text-sm font-bold">✓ Salvo</span>
                     ) : (
                       <button
-                        onClick={() => saveResult(match.id)}
+                        onClick={() => saveResult(match.id, isKnockoutMatch)}
                         disabled={saving[match.id]}
-                        className="ml-2 bg-nlw-input text-white px-4 py-2 rounded text-sm font-bold hover:bg-nlw-card transition-colors disabled:opacity-40 border border-nlw-yellow/40"
+                        className="bg-nlw-input text-white px-4 py-2 rounded text-sm font-bold hover:bg-nlw-card transition-colors disabled:opacity-40 border border-nlw-yellow/40"
                       >
                         {saving[match.id] ? '...' : 'Salvar'}
                       </button>

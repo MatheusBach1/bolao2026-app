@@ -9,6 +9,8 @@ create table if not exists matches (
   slot integer,
   result_home integer,
   result_away integer,
+  -- penalty_winner: 'home' | 'away' | null (null = no penalties went to penalties)
+  penalty_winner text,
   api_match_id text,
   created_at timestamptz default now()
 );
@@ -19,6 +21,8 @@ create table if not exists guesses (
   match_id integer references matches(id) on delete cascade,
   guess_home integer not null,
   guess_away integer not null,
+  -- guess_penalty_winner: 'home' | 'away' | null (only set when guess is a draw in knockout)
+  guess_penalty_winner text,
   submitted_at timestamptz default now(),
   points integer,
   unique(player_name, match_id)
