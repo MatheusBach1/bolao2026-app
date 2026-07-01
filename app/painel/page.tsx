@@ -1,6 +1,7 @@
 import { supabaseAdmin as supabase } from '@/lib/supabase'
 import type { Match, Guess } from '@/lib/supabase'
 import PainelPhaseGroup from '@/components/PainelPhaseGroup'
+import { getHiddenGuesses } from '@/lib/guessDelay'
 
 export const revalidate = 60
 
@@ -15,11 +16,20 @@ const PHASE_LABEL: Record<string, string> = {
 }
 
 async function getData() {
-  const [{ data: matches }, { data: guesses }] = await Promise.all([
+  const [{ data: matches }, { data: guesses }, hidden] = await Promise.all([
     supabase.from('matches').select('*').order('match_time', { ascending: true }),
     supabase.from('guesses').select('*'),
+    getHiddenGuesses(),
   ])
-  return { matches: (matches ?? []) as Match[], guesses: (guesses ?? []) as Guess[] }
+
+  const allGuesses = (guesses ?? []) as Guess[]
+
+  // Filter out guesses that are currently in the hidden window
+  const visibleGuesses = allGuesses.filter(
+    (g) => !hidden.has(`${g.match_id}:${g.player_name}`)
+  )
+
+  return { matches: (matches ?? []) as Match[], guesses: visibleGuesses }
 }
 
 export default async function PainelPage() {

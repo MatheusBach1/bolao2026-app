@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { PLAYERS } from '@/lib/players'
+import { maybeSetHiddenPlayer } from '@/lib/guessDelay'
 
 export async function GET(req: NextRequest) {
   const player = req.nextUrl.searchParams.get('player')
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
 
   const { data: match } = await supabaseAdmin
     .from('matches')
-    .select('match_time, round')
+    .select('match_time, round, hidden_delay_set')
     .eq('id', match_id)
     .single()
 
@@ -72,6 +73,9 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ error: 'Erro ao salvar palpite.' }, { status: 500 })
   }
+
+  // Fire-and-forget: roll the hidden-player lottery for this match (only on first submission)
+  maybeSetHiddenPlayer(match_id, match.match_time).catch(() => {})
 
   return NextResponse.json({ success: true })
 }
